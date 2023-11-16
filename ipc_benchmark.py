@@ -20,20 +20,22 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
     print("Creating ipc worker")
     
     num_messages = args.message_count
-    
+    duration = args.duration
+
+    if duration == 0 and num_messages == 0:
+        raise ValueError("Both duration and num_messages cannot be 0. Specify a positive value for at least one of them.")
 
     if message_pattern == "request-response":
         request = bytearray([random.randint(0, 255) for _ in range(message_size)])
         response = bytearray(message_size)
 
-        for _ in range(num_messages):
+        while True:
+            start_time = time.time()
             # Write request to shared memory
             data[:message_size] = request
-            start_time = time.time()
 
             # Read response from shared memory
             response[:] = data[:message_size]
-
             end_time = time.time()
 
             latency = end_time - start_time
@@ -44,8 +46,14 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput.append(throughput_value)
             timestamps.append(end_time)
 
+            if duration and (end_time - start_time) >= duration:
+                break  # Stop if duration is reached
+
+            if num_messages >= num_messages:
+                break  # Stop if the specified message count is reached
+
     elif message_pattern == "publish-subscribe":
-        for _ in range(num_messages):
+        while True:
             message = bytearray([random.randint(0, 255) for _ in range(message_size)])
             
             # Write message to shared memory
@@ -60,6 +68,12 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput_value = (message_size) / (latency * 1024 * 1024)
             throughput.append(throughput_value)
             timestamps.append(end_time)
+
+            if duration and (end_time - start_time) >= duration:
+                break  # Stop if duration is reached
+
+            if num_messages >= num_messages:
+                break  # Stop if the specified message count is reached
 
     log_message = f"{datetime.utcfromtimestamp(timestamps[-1]).strftime('%Y-%m-%dT%H:%M:%S.%f')}," \
                   f"{process_id},{latency:.6f},{mps_value:.2f},{throughput_value:.2f}"
@@ -110,21 +124,14 @@ def run_ipc_benchmark(args):
         processes = []
 
         for _ in range(num_processes):
-            start_time = time.time()
+            #start_time = time.time()
+            #for each process start a ipc worker
+            for i in range(num_processes):
+                process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, latencies, mps, throughput, timestamps))
+                processes.append(process)
+                process.start()
 
-            if args.duration:
-                while (time.time() - start_time) < args.duration:
-                    for i in range(num_processes):
-                        process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, latencies, mps, throughput, timestamps))
-                        processes.append(process)
-                        process.start()
-                    time.sleep(0.1)
-            elif args.message_count:
-                for i in range(num_processes):
-                    process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, latencies, mps, throughput, timestamps))
-                    processes.append(process)
-                    process.start()
-
+            #wait for ipc workers to either time out or reach message count
             for process in processes:
                 process.join()
         
