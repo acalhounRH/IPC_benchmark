@@ -47,7 +47,9 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput.append(throughput_value)
             timestamps.append(end_time)
 
-            
+            log_message = f"{datetime.utcfromtimestamp(timestamps[-1]).strftime('%Y-%m-%dT%H:%M:%S.%f')}," \
+                  f"{process_id},{latency:.6f},{mps_value:.2f},{throughput_value:.2f}"
+            logging.info(log_message)
 
             Rend_time = time.time()
             if duration and (Rend_time - Rstart_time) >= duration:
@@ -73,7 +75,11 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput_value = (message_size) / (latency * 1024 * 1024)
             throughput.append(throughput_value)
             timestamps.append(end_time)
-
+            
+            log_message = f"{datetime.utcfromtimestamp(timestamps[-1]).strftime('%Y-%m-%dT%H:%M:%S.%f')}," \
+                  f"{process_id},{latency:.6f},{mps_value:.2f},{throughput_value:.2f}"
+            logging.info(log_message)
+            
             Rend_time = time.time()
             if duration and (Rend_time - Rstart_time) >= duration:
                 break  # Stop if duration is reached
@@ -81,10 +87,6 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             messages_processed += 1
             if num_messages and messages_processed >= num_messages:
                 break
-
-    log_message = f"{datetime.utcfromtimestamp(timestamps[-1]).strftime('%Y-%m-%dT%H:%M:%S.%f')}," \
-                  f"{process_id},{latency:.6f},{mps_value:.2f},{throughput_value:.2f}"
-    logging.info(log_message)
 
 def create_shared_memory(size, posix=False):
     print("creating shared memory")
@@ -129,19 +131,19 @@ def run_ipc_benchmark(args):
 
     for run in range(args.runs):
         processes = []
+        start_run_time = time.time()
+        #for each process start a ipc worker
+        for i in range(num_processes):
+            process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, latencies, mps, throughput, timestamps))
+            processes.append(process)
+            process.start()
 
-        for _ in range(num_processes):
-            #start_time = time.time()
-            #for each process start a ipc worker
-            for i in range(num_processes):
-                process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, latencies, mps, throughput, timestamps))
-                processes.append(process)
-                process.start()
-
-            #wait for ipc workers to either time out or reach message count
-            for process in processes:
-                process.join()
+        #wait for ipc workers to either time out or reach message count
+        for process in processes:
+            process.join()
+        end_run_time = time.time()
         
+        duration_runtime = end_run_time - start_run_time 
         latencies = list(latencies)
         p50_latency = np.percentile(latencies, 50)
         p90_latency = np.percentile(latencies, 90)
@@ -173,6 +175,7 @@ def run_ipc_benchmark(args):
 
         summary = {
             'Run': run + 1,  # Adding a "Run" counter
+            'Run Duration': duration_runtime,
             'Options': options,
             'Latency Statistics': {
                 '50th Percentile (P50) Latency': p50_latency,
@@ -194,6 +197,7 @@ def run_ipc_benchmark(args):
 
         if args.human_readable:
             print("\nIPC Benchmark Run Summary:" + str(run + 1) + " out of " + str(args.runs))
+            print("\nDuration runtime:" + str(int(duration_runtime)))
             print("Options:")
             for option, value in options.items():
                 print(f"{option}: {value}")
