@@ -17,8 +17,10 @@ except ImportError:
     posix_ipc = None
 
 def ipc_worker(data, process_id, message_size, message_pattern, args, latencies, mps, throughput, timestamps):
-    logging.info("Creating ipc worker")
+    print("Creating ipc worker")
+    
     num_messages = args.message_count
+    
 
     if message_pattern == "request-response":
         request = bytearray([random.randint(0, 255) for _ in range(message_size)])
@@ -64,9 +66,9 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
     logging.info(log_message)
 
 def create_shared_memory(size, posix=False):
-    logging.info("creating shared memory")
+    print("creating shared memory")
     if posix:
-        logging.info("using posix shared memory")
+        print("using posix shared memory")
         try:
             shm_name = "/shm_" + str(random.randint(1, 1000000))
             shm = posix_ipc.SharedMemory(shm_name, flags=posix_ipc.O_CREAT, size=size * 1024 * 1024)
@@ -77,12 +79,12 @@ def create_shared_memory(size, posix=False):
             shm = posix_ipc.SharedMemory(None, flags=posix_ipc.O_RDWR)
             shared_memory = multiprocessing.shared_memory.SharedMemory(shm_name)
     else:
-        logging.info("using system V shared memory")
+        print("using system V shared memory")
         shared_memory = multiprocessing.shared_memory.SharedMemory(create=True, size=size * 1024 * 1024)
     return shared_memory
 
 def run_ipc_benchmark(args):
-    logging.info("running ipc benchmark")
+    print("running ipc benchmark")
     if args.posix and posix_ipc is None:
         raise ImportError("posix_ipc module is not available. Install it or run without POSIX shared memory.")
 
@@ -177,7 +179,7 @@ def run_ipc_benchmark(args):
         all_results.append(summary)
 
         if args.human_readable:
-            print("IPC Benchmark Summary (Human-Readable):")
+            print("\nIPC Benchmark Run Summary:" + str(run + 1) + " out of " + str(args.runs))
             print("Options:")
             for option, value in options.items():
                 print(f"{option}: {value}")
@@ -271,7 +273,6 @@ def main():
     option_permutations = list(itertools.product(*config.values()))
 
     for options in option_permutations:
-        logging.info(options)
         parsed_args = argparse.Namespace(**dict(zip(config.keys(), options)))
         run_ipc_benchmark(parsed_args)
 
