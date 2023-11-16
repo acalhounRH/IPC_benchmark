@@ -46,8 +46,8 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             message = bytearray([random.randint(0, 255) for _ in range(message_size)])
             
             # Write message to shared memory
-            data[:message_size] = message
             start_time = time.time()
+            data[:message_size] = message
             end_time = time.time()
 
             latency = end_time - start_time
