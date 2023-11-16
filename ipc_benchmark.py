@@ -41,9 +41,6 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput.append(throughput_value)
             timestamps.append(end_time)
 
-            # Release shared memory
-            data.release()
-
     elif message_pattern == "publish-subscribe":
         for _ in range(num_messages):
             message = bytearray([random.randint(0, 255) for _ in range(message_size)])
@@ -60,9 +57,6 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput_value = (message_size) / (latency * 1024 * 1024)
             throughput.append(throughput_value)
             timestamps.append(end_time)
-
-            # Release shared memory
-            data.release()
 
     log_message = f"{datetime.utcfromtimestamp(timestamps[-1]).strftime('%Y-%m-%dT%H:%M:%S.%f')}," \
                   f"{process_id},{latency:.6f},{mps_value:.2f},{throughput_value:.2f}"
@@ -126,7 +120,7 @@ def run_ipc_benchmark(args):
 
             for process in processes:
                 process.join()
-
+        
         latencies = list(latencies)
         p50_latency = np.percentile(latencies, 50)
         p90_latency = np.percentile(latencies, 90)
@@ -176,6 +170,10 @@ def run_ipc_benchmark(args):
         }
 
         all_results.append(summary)
+
+    shared_data = None
+    shared_memory.close()
+    shared_memory.unlink()
 
     if args.output_json:
         with open('ipc_benchmark_results.json', 'w') as json_file:
