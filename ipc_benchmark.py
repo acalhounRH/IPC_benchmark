@@ -128,6 +128,7 @@ def run_ipc_benchmark(args):
     timestamps = multiprocessing.Manager().list()
 
     all_results = []
+    all_agg_results = []
 
     for run in range(args.runs):
         processes = []
@@ -223,6 +224,7 @@ def run_ipc_benchmark(args):
     shared_memory.unlink()
 
     aggregate_summary = {
+        'Options': options,
         'Aggregate Latency Statistics': {
             '50th Percentile (P50) Latency': np.percentile([run['Latency Statistics']['50th Percentile (P50) Latency'] for run in all_results], 50),
             '90th Percentile (P90) Latency': np.percentile([run['Latency Statistics']['90th Percentile (P90) Latency'] for run in all_results], 90),
@@ -238,9 +240,16 @@ def run_ipc_benchmark(args):
         'Aggregate Percent Deviation': np.mean([run['Percent Deviation'] for run in all_results]),
         'Aggregate Jitter': np.mean([run['Jitter'] for run in all_results])
         }
-
+    
+    all_agg_results.append(aggregate_summary)
+    
     if args.human_readable:
         print("\nAggregate Statistics Across All Runs:")
+        
+        print("Options:")
+        for option, value in options.items():
+            print(f"{option}: {value}")
+        
         print("\nAggregate Latency Statistics:")
         for stat, value in aggregate_summary['Aggregate Latency Statistics'].items():
             print(f"{stat}: {value:.6f} seconds")
@@ -255,6 +264,10 @@ def run_ipc_benchmark(args):
     if args.output_json:
         with open('ipc_benchmark_results.json', 'w') as json_file:
             json.dump(all_results, json_file, indent=4)
+            
+    if args.output_json:
+        with open('ipc_benchmark_aggregate_results.json', 'w') as json_file:
+            json.dump(all_agg_results, json_file, indent=4)
 
 def main():
     
