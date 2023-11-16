@@ -165,7 +165,7 @@ def run_ipc_benchmark(args):
                 'Average Latency': average_latency
             },
             'Throughput Statistics': {
-                'Average MPS': avg_mps,
+                'Average Msg/s': avg_mps,
                 'Average Throughput': avg_throughput,
                 'Maximum Throughput': max_throughput,
                 'Minimum Throughput': min_throughput
@@ -176,33 +176,31 @@ def run_ipc_benchmark(args):
 
         all_results.append(summary)
 
+        if args.human_readable:
+            print("IPC Benchmark Summary (Human-Readable):")
+            print("Options:")
+            for option, value in options.items():
+                print(f"{option}: {value}")
+            
+            print("\nLatency Statistics:")
+            for stat, value in summary['Latency Statistics'].items():
+                print(f"{stat}: {value:.6f} seconds")
+    
+            print("\nThroughput Statistics:")
+            for stat, value in summary['Throughput Statistics'].items():
+                print(f"{stat}: {value:.2f}")
+    
+            print("\nPercent Deviation: {:.3f}%".format(percent_deviation))
+            print(f"Jitter: {jitter:.6f} seconds")
+    
+            #print("\nBenchmark Results:")
+            #print("Timestamp                    Process ID   Latency (s)   Msg/s    Throughput (MB/s)")
+            #for i in range(num_processes):
+            #    print(f"{datetime.utcfromtimestamp(timestamps[i]).strftime('%Y-%m-%dT%H:%M:%S.%f')}      {i}            {latencies[i]:.6f}       {mps[i]:.2f}    {throughput[i]:.2f}")
+    
     shared_data = None
     shared_memory.close()
     shared_memory.unlink()
-
-    if args.human_readable:
-        print("IPC Benchmark Summary (Human-Readable):")
-        print("Options:")
-        for option, value in options.items():
-            print(f"{option}: {value}")
-        
-        print("\nLatency Statistics:")
-        for stat, value in summary['Latency Statistics'].items():
-            print(f"{stat}: {value:.6f} seconds")
-
-        print("\nThroughput Statistics:")
-        for stat, value in summary['Throughput Statistics'].items():
-            print(f"{stat}: {value:.2f}")
-
-        print("\nPercent Deviation: {:.3f}%".format(percent_deviation))
-        print(f"Jitter: {jitter:.6f} seconds")
-
-        print("\nBenchmark Results:")
-        print("Timestamp                    Process ID   Latency (s)   MPS    Throughput (MB/s)")
-        for i in range(num_processes):
-            print(f"{datetime.utcfromtimestamp(timestamps[i]).strftime('%Y-%m-%dT%H:%M:%S.%f')}      {i}            {latencies[i]:.6f}       {mps[i]:.2f}    {throughput[i]:.2f}")
-
-
     
     if args.output_json:
         with open('ipc_benchmark_results.json', 'w') as json_file:
