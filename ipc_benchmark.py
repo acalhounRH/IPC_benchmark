@@ -221,6 +221,28 @@ def run_ipc_benchmark(args):
     shared_data = None
     shared_memory.close()
     shared_memory.unlink()
+
+    aggregate_summary = {
+        'Aggregate Latency Statistics': {
+            '50th Percentile (P50) Latency': np.percentile([run['Latency Statistics']['50th Percentile (P50) Latency'] for run in all_results], 50),
+            '90th Percentile (P90) Latency': np.percentile([run['Latency Statistics']['90th Percentile (P90) Latency'] for run in all_results], 90),
+            '99th Percentile (P99) Latency': np.percentile([run['Latency Statistics']['99th Percentile (P99) Latency'] for run in all_results], 99),
+            'Average Latency': np.mean([run['Latency Statistics']['Average Latency'] for run in all_results])
+        },
+        'Aggregate Throughput Statistics': {
+            'Average Msg/s': np.mean([run['Throughput Statistics']['Average Msg/s'] for run in all_results]),
+            'Average Throughput': np.mean([run['Throughput Statistics']['Average Throughput'] for run in all_results]),
+            'Maximum Throughput': np.max([run['Throughput Statistics']['Maximum Throughput'] for run in all_results]),
+            'Minimum Throughput': np.min([run['Throughput Statistics']['Minimum Throughput'] for run in all_results])
+        },
+        'Aggregate Percent Deviation': np.mean([run['Percent Deviation'] for run in all_results]),
+        'Aggregate Jitter': np.mean([run['Jitter'] for run in all_results])
+        }
+
+    if args.human_readable:
+        print("\nAggregate Statistics Across All Runs:")
+        for stat, value in aggregate_summary.items():
+            print(f"{stat}: {value:.6f}")
     
     if args.output_json:
         with open('ipc_benchmark_results.json', 'w') as json_file:
