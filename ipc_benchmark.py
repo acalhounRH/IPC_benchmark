@@ -185,9 +185,9 @@ def run_ipc_benchmark(args):
             },
             'Throughput Statistics': {
                 'Average Msg/s': avg_mps,
-                'Average Throughput': avg_throughput,
-                'Maximum Throughput': max_throughput,
-                'Minimum Throughput': min_throughput
+                'Average Throughput MB/s': avg_throughput,
+                'Maximum Throughput MB/s': max_throughput,
+                'Minimum Throughput MB/s': min_throughput
             },
             'Percent Deviation': percent_deviation,
             'Jitter': jitter
@@ -231,9 +231,9 @@ def run_ipc_benchmark(args):
         },
         'Aggregate Throughput Statistics': {
             'Average Msg/s': np.mean([run['Throughput Statistics']['Average Msg/s'] for run in all_results]),
-            'Average Throughput': np.mean([run['Throughput Statistics']['Average Throughput'] for run in all_results]),
-            'Maximum Throughput': np.max([run['Throughput Statistics']['Maximum Throughput'] for run in all_results]),
-            'Minimum Throughput': np.min([run['Throughput Statistics']['Minimum Throughput'] for run in all_results])
+            'Average Throughput MB/s': np.mean([run['Throughput Statistics']['Average Throughput MB/s'] for run in all_results]),
+            'Maximum Throughput MB/s': np.max([run['Throughput Statistics']['Maximum Throughput MB/s'] for run in all_results]),
+            'Minimum Throughput MB/s': np.min([run['Throughput Statistics']['Minimum Throughput MB/s'] for run in all_results])
         },
         'Aggregate Percent Deviation': np.mean([run['Percent Deviation'] for run in all_results]),
         'Aggregate Jitter': np.mean([run['Jitter'] for run in all_results])
@@ -241,8 +241,16 @@ def run_ipc_benchmark(args):
 
     if args.human_readable:
         print("\nAggregate Statistics Across All Runs:")
-        for stat, value in aggregate_summary.items():
-            print(f"{stat}: {value:.6f}")
+        print("\nAggregate Latency Statistics:")
+        for stat, value in aggregate_summary['Aggregate Latency Statistics'].items():
+            print(f"{stat}: {value:.6f} seconds")
+    
+        print("\nAggregate Throughput Statistics:")
+        for stat, value in aggregate_summary['Aggregate Throughput Statistics'].items():
+            print(f"{stat}: {value:.2f}")
+    
+        print("\nAggregate Percent Deviation: "+ str(aggregate_summary['Aggregate Percent Deviation']))
+        print("Aggregate Jitter: " + str(aggregate_summary['Aggregate Jitter']) + "seconds")
     
     if args.output_json:
         with open('ipc_benchmark_results.json', 'w') as json_file:
