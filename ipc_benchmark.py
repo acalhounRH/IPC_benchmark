@@ -87,7 +87,7 @@ def run_ipc_benchmark(args):
         raise ImportError("posix_ipc module is not available. Install it or run without POSIX shared memory.")
 
     shared_memory = create_shared_memory(args.data_size, posix=args.posix)
-    logging.basicConfig(filename=args.log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
+    logging.basicConfig(filename=args.log_file, level=logging.INFO, format='%(message)s')
     data = multiprocessing.shared_memory.SharedMemory(name=shared_memory.name)
 
     if args.message_pattern == "request-response":
