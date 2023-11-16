@@ -20,11 +20,12 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
     print("Creating ipc worker")
     
     num_messages = args.message_count
+    messages_processed = 0
     duration = args.duration
 
     if duration == 0 and num_messages == 0:
         raise ValueError("Both duration and num_messages cannot be 0. Specify a positive value for at least one of them.")
-
+    Rstart_time = time.time()
     if message_pattern == "request-response":
         request = bytearray([random.randint(0, 255) for _ in range(message_size)])
         response = bytearray(message_size)
@@ -46,11 +47,15 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput.append(throughput_value)
             timestamps.append(end_time)
 
-            if duration and (end_time - start_time) >= duration:
+            
+
+            Rend_time = time.time()
+            if duration and (Rend_time - Rstart_time) >= duration:
                 break  # Stop if duration is reached
 
-            if num_messages >= num_messages:
-                break  # Stop if the specified message count is reached
+            messages_processed += 1
+            if num_messages and messages_processed >= num_messages:
+                break
 
     elif message_pattern == "publish-subscribe":
         while True:
@@ -69,11 +74,13 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, latencies,
             throughput.append(throughput_value)
             timestamps.append(end_time)
 
-            if duration and (end_time - start_time) >= duration:
+            Rend_time = time.time()
+            if duration and (Rend_time - Rstart_time) >= duration:
                 break  # Stop if duration is reached
-
-            if num_messages >= num_messages:
-                break  # Stop if the specified message count is reached
+            
+            messages_processed += 1
+            if num_messages and messages_processed >= num_messages:
+                break
 
     log_message = f"{datetime.utcfromtimestamp(timestamps[-1]).strftime('%Y-%m-%dT%H:%M:%S.%f')}," \
                   f"{process_id},{latency:.6f},{mps_value:.2f},{throughput_value:.2f}"
