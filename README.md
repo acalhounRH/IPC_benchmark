@@ -82,8 +82,10 @@ message_count:
   - 5000
   - 10000
 
-human_readable: true
-output_json: true
+human_readable:
+   - true
+output_json:
+   - true
 
 runs: 3
 ```
