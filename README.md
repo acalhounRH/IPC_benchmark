@@ -46,18 +46,162 @@ In this example:
 python ipc_benchmark.py --config=config.yaml
 
 Benchmark_config.yaml Example:
+```
+data_size:
+  - 10
+  - 20
+  - 50
 
-    
-    data_size: [1024]
-    duration: [60]
-    log_file: "benchmark.log"
-    posix: true
-    message_size: [128 256 512 1024 2048]
-    message_pattern: [ "request-response" "pub-sub" ] 
-    process_count: [2 4 8 12]
-    message_count: 0
-    human_readable: true
-    output_json: true
-    runs: 3
+duration:
+  - 60
+  - 120
+  - 180
 
+log_file: ipc_benchmark.log
 
+posix:
+  - true
+  - false
+
+message_size:
+  - 512
+  - 1024
+  - 2048
+
+message_pattern:
+  - request-response
+  - publish-subscribe
+
+process_count:
+  - 2
+  - 4
+  - 8
+
+message_count:
+  - 1000
+  - 5000
+  - 10000
+
+human_readable: true
+output_json: true
+
+runs: 3
+```
+### Sample output
+
+Standard output (Human-readable)
+
+   ```
+   IPC Benchmark Run Summary: 1 out of 3
+   Options:
+   Data Size (MB): 10
+   Duration (s): 60
+   Log File: ipc_benchmark.log
+   POSIX Shared Memory: True
+   Message Size (bytes): 512
+   Message Pattern: request-response
+   Process Count: 2
+   Message Count: 1000
+   Human-Readable Output Format: True
+   Output JSON Format: True
+   Runs: 3
+   
+   Latency Statistics:
+   50th Percentile (P50) Latency: 0.005123 seconds
+   90th Percentile (P90) Latency: 0.007234 seconds
+   99th Percentile (P99) Latency: 0.010456 seconds
+   Average Latency: 0.006789 seconds
+   
+   Throughput Statistics:
+   Average Msg/s: 150.0
+   Average Throughput: 0.000073
+   Maximum Throughput: 0.000098
+   Minimum Throughput: 0.000054
+   
+   Percent Deviation: 1.23%
+   Jitter: 0.000012 seconds
+   
+   IPC Benchmark Run Summary: 2 out of 3
+   ...
+   
+   IPC Benchmark Run Summary: 3 out of 3
+   ...
+
+   Aggregate Statistics:
+   
+   Latency:
+   50th Percentile (P50): 0.006543 seconds
+   90th Percentile (P90): 0.008765 seconds
+   99th Percentile (P99): 0.011987 seconds
+   Average: 0.009876 seconds
+   
+   Throughput:
+   Average Msg/s: 145.0
+   Average: 0.000065
+   Maximum: 0.000085
+   Minimum: 0.000045
+   
+   Percent Deviation: 1.45%
+   Jitter: 0.000015 seconds
+```
+### Json output
+``` 
+   [
+    {
+        "Run": 1,
+        "Options": {
+            "Data Size (MB)": 10,
+            "Duration (s)": 60,
+            "Log File": "ipc_benchmark.log",
+            "POSIX Shared Memory": true,
+            "Message Size (bytes)": 512,
+            "Message Pattern": "request-response",
+            "Process Count": 2,
+            "Message Count": 1000,
+            "Human-Readable Output Format": true,
+            "Output JSON Format": true,
+            "Runs": 3
+        },
+        "Latency Statistics": {
+            "50th Percentile (P50) Latency": 0.005123,
+            "90th Percentile (P90) Latency": 0.007234,
+            "99th Percentile (P99) Latency": 0.010456,
+            "Average Latency": 0.006789
+        },
+        "Throughput Statistics": {
+            "Average Msg/s": 150.0,
+            "Average Throughput": 0.000073,
+            "Maximum Throughput": 0.000098,
+            "Minimum Throughput": 0.000054
+        },
+        "Percent Deviation": 1.23,
+        "Jitter": 0.000012
+    },
+    {
+        "Run": 2,
+        ...
+    },
+    {
+        "Run": 3,
+        ...
+    }
+    {
+        "Aggregate Statistics": {
+            "Latency": {
+                "50th Percentile (P50)": 0.006543,
+                "90th Percentile (P90)": 0.008765,
+                "99th Percentile (P99)": 0.011987,
+                "Average": 0.009876
+            },
+            "Throughput": {
+                "Average Msg/s": 145.0,
+                "Average": 0.000065,
+                "Maximum": 0.000085,
+                "Minimum": 0.000045
+            },
+            "Percent Deviation": 1.45,
+            "Jitter": 0.000015
+        }
+    }
+]
+```
