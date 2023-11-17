@@ -52,9 +52,9 @@ Benchmark_config.yaml Example:
     duration: [60]
     log_file: "benchmark.log"
     posix: true
-    message_size: [256]
-    message_pattern: "request-response"
-    process_count: 4
+    message_size: [128 256 512 1024 2048]
+    message_pattern: [ "request-response" "pub-sub" ] 
+    process_count: [2 4 8 12]
     message_count: 0
     human_readable: true
     output_json: true
