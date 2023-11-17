@@ -21,7 +21,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
     
     num_messages = args.message_count
     messages_processed = 0
-    duration = args.duratio
+    duration = args.duration
     
     if duration == 0 and num_messages == 0:
         raise ValueError("Both duration and num_messages cannot be 0. Specify a positive value for at least one of them.")
