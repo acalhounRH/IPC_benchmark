@@ -20,27 +20,31 @@ def print_table(log_data):
     process_ids = set(entry['process_id'] for entry in log_data)
     process_ids = sorted(process_ids)
 
-    print("\nTime\t\t\t", end="")
+    header = ["Time"]
     for process_id in process_ids:
-        print(f"Process {process_id}\t", end="")
-    print()
+        header.extend([f"Process {process_id} Latency", f"Process {process_id} MPS", f"Process {process_id} Throughput"])
 
-    current_second = None
-    for entry in log_data:
-        timestamp = entry['capture_time']
-        if current_second is None or current_second != int(timestamp):
-            current_second = int(timestamp)
-            print(f"{datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S')}\t", end="")
+    with open('ipc_benchmark_results.csv', 'w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(header)
 
-        process_id = entry['process_id']
-        latency = entry['latency']
-        mps_value = entry['mps']
-        throughput_value = entry['throughput']
+        current_second = None
+        for entry in log_data:
+            timestamp = entry['capture_time']
+            if current_second is None or current_second != int(timestamp):
+                current_second = int(timestamp)
+                row = [datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S')]
+            else:
+                row = ['']
 
-        print(f"{latency:.6f}\t\t{mps_value:.2f}\t\t{throughput_value:.2f}\t", end="")
+            process_id = entry['process_id']
+            latency = entry['latency']
+            mps_value = entry['mps']
+            throughput_value = entry['throughput']
 
-    print()
-
+            row.extend([f"{latency:.6f}", f"{mps_value:.2f}", f"{throughput_value:.2f}"])
+            csv_writer.writerow(row)
+            
 def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps):
     #print("Creating ipc worker")
     
