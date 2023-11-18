@@ -129,16 +129,18 @@ def run_ipc_benchmark(args):
         'Output Format': 'Human-Readable' if args.human_readable else 'JSON',
         'Runs': args.runs
         }
-
+    
     for run in range(args.runs):
 
-        latencies = []
-        mps = []
-        throughput = []
+        #latencies = []
+        #mps = []
+        #throughput = []
         timestamps = multiprocessing.Manager().list()
         processes = []
         
         start_run_time = time.time()
+        current_second = int(start_run_time)
+        second_process_data = {i: {'latencies': [], 'mps': [], 'throughput': []} for i in range(num_processes)}
         
         #for each process start a ipc worker
         for i in range(num_processes):
@@ -149,50 +151,71 @@ def run_ipc_benchmark(args):
         #wait for ipc workers to either time out or reach message count
         for process in processes:
             process.join()
+            
         end_run_time = time.time()
         duration_runtime = end_run_time - start_run_time 
 
-        # Calculate latency, MPS, and throughput for each timestamp
+        # Calculate average per second latency, MPS, and throughput
+        avg_latency_list = []
+        avg_mps_list = []
+        avg_througput_list = []
         for timestamp in timestamps:
             latency = timestamp['end_time'] - timestamp['start_time']
-            latencies.append(latency)
+            #latencies.append(latency)
 
             mps_value = 1 / latency
-            mps.append(mps_value)
+            #mps.append(mps_value)
 
             throughput_value = (args.message_size * 2) / (latency * 1024 * 1024)
-            throughput.append(throughput_value)
-                
-        # Log the calculated values for each run
-        for i, timestamp in enumerate(timestamps):
-            
-            log_data.append({
-                'capture_time': timestamp['capture_time'],
-                'process_id': timestamp['process_id'],
-                'latency': latencies[i],
-                'mps': mps[i],
-                'throughput': throughput[i],
-                'options': options
-            })
-            #latencies
-            log_message = f"{timestamp['capture_time']},{timestamp['process_id']},{latencies[i]:.6f},{mps[i]:.2f},{throughput[i]:.2f}"
-            logging.info(log_message)
+            #throughput.append(throughput_value)
+
+            # Check if the timestamp is within the same second
+            if int(timestamp['end_time']) == current_second:
+                second_process_data[timestamp['process_id']]['latencies'].append(latency)
+                second_process_data[timestamp['process_id']]['mps'].append(mps_value)
+                second_process_data[timestamp['process_id']]['throughput'].append(throughput_value)
+            else:
+                # Calculate averages for the current second and store results
+                for process_id, data in process_data.items():
+                    if data['latencies']:
+                        avg_latency = np.mean(data['latencies'])
+                        avg_mps = np.mean(data['mps'])
+                        avg_throughput = np.mean(data['throughput'])
+
+                        avg_latency_list.append(avg_latency)
+                        avg_mps_list.append(avg_latency)
+                        avg_througput_list.append(avg_latency)
+                        # Store results for the current second and process
+                        log_data.append({
+                            'capture_time': datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S'),
+                            'process_id': process_id,
+                            'latency': avg_latency,
+                            'mps': avg_mps,
+                            'throughput': avg_throughput,
+                            'options': options
+                        })
+                        
+                        # Log the message after appending data to log_data
+                        log_message = f"{datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S')},{process_id},{avg_latency:.6f},{avg_mps:.2f},{avg_throughput:.2f}"
+                        logging.info(log_message)
+                    
+                # Reset data for the new second
+                current_second = int(timestamp['end_time'])
+                process_data = {i: {'latencies': [latency], 'mps': [mps_value], 'throughput': [throughput_value]} for i in range(num_processes)}    
         
-        #latencies = list(latencies)
-        p50_latency = np.percentile(latencies, 50)
-        p90_latency = np.percentile(latencies, 90)
-        p99_latency = np.percentile(latencies, 99)
-        average_latency = np.mean(latencies)
+        p50_latency = np.percentile(avg_latency_list, 50)
+        p90_latency = np.percentile(avg_latency_list, 90)
+        p99_latency = np.percentile(avg_latency_list, 99)
+        average_latency = np.mean(avg_latency_list)
 
-        #mps = list(mps)
         #throughput = list(throughput)
-        avg_mps = sum(mps) / len(mps)
-        avg_throughput = sum(throughput) / len(throughput)
-        max_throughput = max(throughput)
-        min_throughput = min(throughput)
+        avg_mps = sum(avg_mps) / len(avg_mps)
+        avg_throughput = sum(avg_througput_list) / len(avg_througput_list)
+        max_throughput = max(avg_througput_list)
+        min_throughput = min(avg_througput_list)
 
-        percent_deviation = np.std(latencies) / np.mean(latencies) * 100
-        jitter = max(latencies) - min(latencies)
+        percent_deviation = np.std(avg_latency_list) / np.mean(avg_latency_list) * 100
+        jitter = max(avg_latency_list) - min(avg_latency_list)
 
         summary = {
             'Run': run + 1,  # Adding a "Run" counter
