@@ -16,6 +16,31 @@ try:
 except ImportError:
     posix_ipc = None
 
+def print_table(log_data):
+    process_ids = set(entry['process_id'] for entry in log_data)
+    process_ids = sorted(process_ids)
+
+    print("\nTime\t\t\t", end="")
+    for process_id in process_ids:
+        print(f"Process {process_id}\t", end="")
+    print()
+
+    current_second = None
+    for entry in log_data:
+        timestamp = entry['capture_time']
+        if current_second is None or current_second != int(timestamp):
+            current_second = int(timestamp)
+            print(f"{datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S')}\t", end="")
+
+        process_id = entry['process_id']
+        latency = entry['latency']
+        mps_value = entry['mps']
+        throughput_value = entry['throughput']
+
+        print(f"{latency:.6f}\t\t{mps_value:.2f}\t\t{throughput_value:.2f}\t", end="")
+
+    print()
+
 def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps):
     #print("Creating ipc worker")
     
@@ -205,6 +230,9 @@ def run_ipc_benchmark(args):
                 message_counter = 0
                 current_second = int(timestamp['end_time'])
                 second_process_data = {i: {'latencies': [latency], 'mps': [message_counter], 'throughput': [throughput_value]} for i in range(num_processes)}    
+        
+        print_table(log_data)
+        
         process_endtime = time.time()
         process_duration = process_endtime - process_starttime
         print("completed processing data, duration: " + str(process_duration))
