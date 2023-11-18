@@ -17,7 +17,7 @@ except ImportError:
     posix_ipc = None
 
 def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps):
-    print("Creating ipc worker")
+    #print("Creating ipc worker")
     
     num_messages = args.message_count
     messages_processed = 0
@@ -167,22 +167,17 @@ def run_ipc_benchmark(args):
             message_counter += 1
             total_message_count += 1
             latency = timestamp['end_time'] - timestamp['start_time']
-            #latencies.append(latency)
-
-            mps_value = 1 / latency
-            #mps.append(mps_value)
-
-            throughput_value = (args.message_size * 2) / (latency * 1024 * 1024)
-            #throughput.append(throughput_value)
+            latency = latency * 1000000
 
             # Check if the timestamp is within the same second
             if int(timestamp['end_time']) == current_second:
+                throughput_value = ((message_counter * args.message_size) / 1024) / 1024
                 second_process_data[timestamp['process_id']]['latencies'].append(latency)
                 second_process_data[timestamp['process_id']]['mps'].append(message_counter)
                 second_process_data[timestamp['process_id']]['throughput'].append(throughput_value)
             else:
                 # Calculate averages for the current second and store results
-                print("1 second has passed - message count = " + str(message_counter))
+                throughput_value = ((message_counter * args.message_size) / 1024) / 1024
                 for process_id, cur_data in second_process_data.items():
                     if cur_data['latencies']:
                         avg_latency = np.mean(cur_data['latencies'])
@@ -209,7 +204,7 @@ def run_ipc_benchmark(args):
                 # Reset data for the new second
                 message_counter = 0
                 current_second = int(timestamp['end_time'])
-                second_process_data = {i: {'latencies': [latency], 'mps': [mps_value], 'throughput': [throughput_value]} for i in range(num_processes)}    
+                second_process_data = {i: {'latencies': [latency], 'mps': [message_counter], 'throughput': [throughput_value]} for i in range(num_processes)}    
         process_endtime = time.time()
         process_duration = process_endtime - process_starttime
         print("completed processing data, duration: " + str(process_duration))
@@ -226,7 +221,7 @@ def run_ipc_benchmark(args):
         max_throughput = max(avg_througput_list)
         min_throughput = min(avg_througput_list)
 
-        percent_deviation = np.std(avg_latency_list) / np.mean(avg_latency_list) * 100
+        lat_percent_deviation = np.std(avg_latency_list) / np.mean(avg_latency_list) * 100
         jitter = max(avg_latency_list) - min(avg_latency_list)
 
         summary = {
@@ -234,10 +229,12 @@ def run_ipc_benchmark(args):
             'Run Duration': duration_runtime,
             'Options': options,
             'Latency Statistics': {
-                '50th Percentile (P50) Latency': p50_latency,
-                '90th Percentile (P90) Latency': p90_latency,
-                '99th Percentile (P99) Latency': p99_latency,
-                'Average Latency': average_latency
+                '50th Percentile (P50) Latency (us)': p50_latency,
+                '90th Percentile (P90) Latency (us)': p90_latency,
+                '99th Percentile (P99) Latency (us)': p99_latency,
+                'Average Latency (us)': average_latency,
+                'Percent Deviation': lat_percent_deviation,
+                'Jitter (us)': jitter
             },
             'Throughput Statistics': {
                 'Total Message Count': total_message_count,
@@ -246,8 +243,6 @@ def run_ipc_benchmark(args):
                 'Maximum Throughput MB/s': max_throughput,
                 'Minimum Throughput MB/s': min_throughput
             },
-            'Percent Deviation': percent_deviation,
-            'Jitter': jitter
         }
         print("Finished Statistics")
         all_results.append(summary)
@@ -261,15 +256,12 @@ def run_ipc_benchmark(args):
             
             print("\nLatency Statistics:")
             for stat, value in summary['Latency Statistics'].items():
-                print(f"{stat}: {value:.6f} seconds")
+                print(f"{stat}: {value:.6f}")
     
             print("\nThroughput Statistics:")
             for stat, value in summary['Throughput Statistics'].items():
                 print(f"{stat}: {value:.2f}")
-    
-            print("\nPercent Deviation: {:.3f}%".format(percent_deviation))
-            print(f"Jitter: {jitter:.6f} seconds")
-    
+        
     shared_data = None
     shared_memory.close()
     shared_memory.unlink()
@@ -277,10 +269,13 @@ def run_ipc_benchmark(args):
     aggregate_summary = {
         'Options': options,
         'Aggregate Latency Statistics': {
-            '50th Percentile (P50) Latency': np.percentile([run['Latency Statistics']['50th Percentile (P50) Latency'] for run in all_results], 50),
-            '90th Percentile (P90) Latency': np.percentile([run['Latency Statistics']['90th Percentile (P90) Latency'] for run in all_results], 90),
-            '99th Percentile (P99) Latency': np.percentile([run['Latency Statistics']['99th Percentile (P99) Latency'] for run in all_results], 99),
-            'Average Latency': np.mean([run['Latency Statistics']['Average Latency'] for run in all_results])
+            '50th Percentile (P50) Latency (us)': np.percentile([run['Latency Statistics']['50th Percentile (P50) Latency (us)'] for run in all_results], 50),
+            '90th Percentile (P90) Latency (us)': np.percentile([run['Latency Statistics']['90th Percentile (P90) Latency (us)'] for run in all_results], 90),
+            '99th Percentile (P99) Latency (us)': np.percentile([run['Latency Statistics']['99th Percentile (P99) Latency (us)'] for run in all_results], 99),
+            'Average Latency (us)': np.mean([run['Latency Statistics']['Average Latency (us)'] for run in all_results]),
+            'Aggregate Percent Deviation': np.mean([run['Latency Statistics']['Percent Deviation'] for run in all_results]),
+            'Aggregate Jitter (us)': np.mean([run['Latency Statistics']['Jitter (us)'] for run in all_results])
+
         },
         'Aggregate Throughput Statistics': {
             'Average Total Message Count': np.mean([run['Throughput Statistics']['Total Message Count'] for run in all_results]),
@@ -289,8 +284,6 @@ def run_ipc_benchmark(args):
             'Maximum Throughput MB/s': np.max([run['Throughput Statistics']['Maximum Throughput MB/s'] for run in all_results]),
             'Minimum Throughput MB/s': np.min([run['Throughput Statistics']['Minimum Throughput MB/s'] for run in all_results])
         },
-        'Aggregate Percent Deviation': np.mean([run['Percent Deviation'] for run in all_results]),
-        'Aggregate Jitter': np.mean([run['Jitter'] for run in all_results])
         }
     
     all_agg_results.append(aggregate_summary)
@@ -304,14 +297,11 @@ def run_ipc_benchmark(args):
         
         print("\nAggregate Latency Statistics:")
         for stat, value in aggregate_summary['Aggregate Latency Statistics'].items():
-            print(f"{stat}: {value:.6f} seconds")
+            print(f"{stat}: {value:.6f} us")
     
         print("\nAggregate Throughput Statistics:")
         for stat, value in aggregate_summary['Aggregate Throughput Statistics'].items():
             print(f"{stat}: {value:.2f}")
-    
-        print("\nAggregate Percent Deviation: "+ str(aggregate_summary['Aggregate Percent Deviation']))
-        print("Aggregate Jitter: " + str(aggregate_summary['Aggregate Jitter']) + "seconds")
     
     if args.output_json:
         with open('ipc_benchmark_results.json', 'w') as json_file:
