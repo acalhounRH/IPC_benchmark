@@ -31,13 +31,13 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
         response = bytearray(message_size)
 
         while True:
-            start_time = time.time()
+            start_time = time..perf_counter()
             # Write request to shared memory
             data[:message_size] = request
 
             # Read response from shared memory
             response[:] = data[:message_size]
-            end_time = time.time()
+            end_time = time..perf_counter()
 
             timestamps.append({
                 'capture_time': datetime.utcfromtimestamp(end_time).strftime('%Y-%m-%dT%H:%M:%S.%f'),
@@ -59,7 +59,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
             message = bytearray([random.randint(0, 255) for _ in range(message_size)])
             
             # Write message to shared memory
-            start_time = time.time()
+            start_time = time..perf_counter()
             data[:message_size] = message
             end_time = time.time()
             print("capture data")
@@ -70,7 +70,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
                 'end_time': end_time
             })
             
-            Rend_time = time.time()
+            Rend_time = time..perf_counter()
             if duration and (Rend_time - Rstart_time) >= duration:
                 break  # Stop if duration is reached
             
@@ -165,7 +165,7 @@ def run_ipc_benchmark(args):
             latency = timestamp['end_time'] - timestamp['start_time']
             #latencies.append(latency)
 
-            mps_value = 1 / latency
+            #mps_value = 1 / latency
             #mps.append(mps_value)
 
             throughput_value = (args.message_size * 2) / (latency * 1024 * 1024)
@@ -174,14 +174,14 @@ def run_ipc_benchmark(args):
             # Check if the timestamp is within the same second
             if int(timestamp['end_time']) == current_second:
                 second_process_data[timestamp['process_id']]['latencies'].append(latency)
-                second_process_data[timestamp['process_id']]['mps'].append(mps_value)
+                #second_process_data[timestamp['process_id']]['mps'].append(mps_value)
                 second_process_data[timestamp['process_id']]['throughput'].append(throughput_value)
             else:
                 # Calculate averages for the current second and store results
                 for process_id, cur_data in second_process_data.items():
                     if cur_data['latencies']:
                         avg_latency = np.mean(cur_data['latencies'])
-                        avg_mps = np.mean(cur_data['mps'])
+                        avg_mps = 1 / avg_latency #np.mean(cur_data['mps'])
                         avg_throughput = np.mean(cur_data['throughput'])
 
                         avg_latency_list.append(avg_latency)
