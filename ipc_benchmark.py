@@ -178,11 +178,11 @@ def run_ipc_benchmark(args):
                 second_process_data[timestamp['process_id']]['throughput'].append(throughput_value)
             else:
                 # Calculate averages for the current second and store results
-                for process_id, data in second_process_data.items():
-                    if data['latencies']:
-                        avg_latency = np.mean(data['latencies'])
-                        avg_mps = np.mean(data['mps'])
-                        avg_throughput = np.mean(data['throughput'])
+                for process_id, cur_data in second_process_data.items():
+                    if cur_data['latencies']:
+                        avg_latency = np.mean(cur_data['latencies'])
+                        avg_mps = np.mean(cur_data['mps'])
+                        avg_throughput = np.mean(cur_data['throughput'])
 
                         avg_latency_list.append(avg_latency)
                         avg_mps_list.append(avg_mps)
