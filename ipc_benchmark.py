@@ -159,6 +159,8 @@ def run_ipc_benchmark(args):
         avg_latency_list = []
         avg_mps_list = []
         avg_througput_list = []
+        print("processing sample data")
+        process_starttime = time.time()
         for timestamp in timestamps:
             latency = timestamp['end_time'] - timestamp['start_time']
             #latencies.append(latency)
@@ -183,8 +185,8 @@ def run_ipc_benchmark(args):
                         avg_throughput = np.mean(data['throughput'])
 
                         avg_latency_list.append(avg_latency)
-                        avg_mps_list.append(avg_latency)
-                        avg_througput_list.append(avg_latency)
+                        avg_mps_list.append(avg_mps)
+                        avg_througput_list.append(avg_throughput)
                         # Store results for the current second and process
                         log_data.append({
                             'capture_time': datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S'),
@@ -202,14 +204,18 @@ def run_ipc_benchmark(args):
                 # Reset data for the new second
                 current_second = int(timestamp['end_time'])
                 second_process_data = {i: {'latencies': [latency], 'mps': [mps_value], 'throughput': [throughput_value]} for i in range(num_processes)}    
+        process_endtime = time.time()
+        process_duration = process_endtime - process_starttime
+        print("completed processing data, duration: " + str(process_duration))
         
+        print("starting Statistics")
         p50_latency = np.percentile(avg_latency_list, 50)
         p90_latency = np.percentile(avg_latency_list, 90)
         p99_latency = np.percentile(avg_latency_list, 99)
         average_latency = np.mean(avg_latency_list)
 
         #throughput = list(throughput)
-        avg_mps = sum(avg_mps) / len(avg_mps)
+        avg_mps = sum(avg_mps_list) / len(avg_mps_list)
         avg_throughput = sum(avg_througput_list) / len(avg_througput_list)
         max_throughput = max(avg_througput_list)
         min_throughput = min(avg_througput_list)
@@ -236,7 +242,7 @@ def run_ipc_benchmark(args):
             'Percent Deviation': percent_deviation,
             'Jitter': jitter
         }
-
+        print("Finished Statistics")
         all_results.append(summary)
 
         if args.human_readable:
@@ -280,7 +286,7 @@ def run_ipc_benchmark(args):
         }
     
     all_agg_results.append(aggregate_summary)
-    
+            
     if args.human_readable:
         print("\nAggregate Statistics Across All Runs:")
         
