@@ -31,13 +31,13 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
         response = bytearray(message_size)
 
         while True:
-            start_time = time..perf_counter()
+            start_time = time.perf_counter()
             # Write request to shared memory
             data[:message_size] = request
 
             # Read response from shared memory
             response[:] = data[:message_size]
-            end_time = time..perf_counter()
+            end_time = time.perf_counter()
 
             timestamps.append({
                 'capture_time': datetime.utcfromtimestamp(end_time).strftime('%Y-%m-%dT%H:%M:%S.%f'),
@@ -59,7 +59,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
             message = bytearray([random.randint(0, 255) for _ in range(message_size)])
             
             # Write message to shared memory
-            start_time = time..perf_counter()
+            start_time = time.perf_counter()
             data[:message_size] = message
             end_time = time.time()
             print("capture data")
@@ -70,7 +70,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
                 'end_time': end_time
             })
             
-            Rend_time = time..perf_counter()
+            Rend_time = time.perf_counter()
             if duration and (Rend_time - Rstart_time) >= duration:
                 break  # Stop if duration is reached
             
@@ -141,7 +141,7 @@ def run_ipc_benchmark(args):
         start_run_time = time.time()
         current_second = int(start_run_time)
         second_process_data = {i: {'latencies': [], 'mps': [], 'throughput': []} for i in range(num_processes)}
-        
+
         #for each process start a ipc worker
         for i in range(num_processes):
             process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, timestamps))
@@ -161,7 +161,9 @@ def run_ipc_benchmark(args):
         avg_througput_list = []
         print("processing sample data")
         process_starttime = time.time()
+        message_counter = 0
         for timestamp in timestamps:
+            message_counter += 1
             latency = timestamp['end_time'] - timestamp['start_time']
             #latencies.append(latency)
 
@@ -178,6 +180,7 @@ def run_ipc_benchmark(args):
                 second_process_data[timestamp['process_id']]['throughput'].append(throughput_value)
             else:
                 # Calculate averages for the current second and store results
+                print("1 second has passed - message count = " + str(message_counter))
                 for process_id, cur_data in second_process_data.items():
                     if cur_data['latencies']:
                         avg_latency = np.mean(cur_data['latencies'])
