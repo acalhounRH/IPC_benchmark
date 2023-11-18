@@ -162,12 +162,14 @@ def run_ipc_benchmark(args):
         print("processing sample data")
         process_starttime = time.time()
         message_counter = 0
+        total_message_count = 0
         for timestamp in timestamps:
             message_counter += 1
+            total_message_count += 1
             latency = timestamp['end_time'] - timestamp['start_time']
             #latencies.append(latency)
 
-            #mps_value = 1 / latency
+            mps_value = 1 / latency
             #mps.append(mps_value)
 
             throughput_value = (args.message_size * 2) / (latency * 1024 * 1024)
@@ -176,7 +178,7 @@ def run_ipc_benchmark(args):
             # Check if the timestamp is within the same second
             if int(timestamp['end_time']) == current_second:
                 second_process_data[timestamp['process_id']]['latencies'].append(latency)
-                #second_process_data[timestamp['process_id']]['mps'].append(mps_value)
+                second_process_data[timestamp['process_id']]['mps'].append(message_counter)
                 second_process_data[timestamp['process_id']]['throughput'].append(throughput_value)
             else:
                 # Calculate averages for the current second and store results
@@ -184,7 +186,7 @@ def run_ipc_benchmark(args):
                 for process_id, cur_data in second_process_data.items():
                     if cur_data['latencies']:
                         avg_latency = np.mean(cur_data['latencies'])
-                        avg_mps = 1 / avg_latency #np.mean(cur_data['mps'])
+                        avg_mps = message_counter #np.mean(cur_data['mps'])
                         avg_throughput = np.mean(cur_data['throughput'])
 
                         avg_latency_list.append(avg_latency)
@@ -205,6 +207,7 @@ def run_ipc_benchmark(args):
                         logging.info(log_message)
                     
                 # Reset data for the new second
+                message_counter = 0
                 current_second = int(timestamp['end_time'])
                 second_process_data = {i: {'latencies': [latency], 'mps': [mps_value], 'throughput': [throughput_value]} for i in range(num_processes)}    
         process_endtime = time.time()
@@ -237,6 +240,7 @@ def run_ipc_benchmark(args):
                 'Average Latency': average_latency
             },
             'Throughput Statistics': {
+                'Total Message Count': total_message_count,
                 'Average Msg/s': avg_mps,
                 'Average Throughput MB/s': avg_throughput,
                 'Maximum Throughput MB/s': max_throughput,
@@ -279,6 +283,7 @@ def run_ipc_benchmark(args):
             'Average Latency': np.mean([run['Latency Statistics']['Average Latency'] for run in all_results])
         },
         'Aggregate Throughput Statistics': {
+            'Average Total Message Count': np.mean([run['Throughput Statistics']['Total Message Count'] for run in all_results]),
             'Average Msg/s': np.mean([run['Throughput Statistics']['Average Msg/s'] for run in all_results]),
             'Average Throughput MB/s': np.mean([run['Throughput Statistics']['Average Throughput MB/s'] for run in all_results]),
             'Maximum Throughput MB/s': np.max([run['Throughput Statistics']['Maximum Throughput MB/s'] for run in all_results]),
