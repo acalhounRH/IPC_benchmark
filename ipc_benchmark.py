@@ -62,7 +62,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
             start_time = time.time()
             data[:message_size] = message
             end_time = time.time()
-
+            print("capture data")
             timestamps.append({
                 'capture_time': datetime.utcfromtimestamp(end_time).strftime('%Y-%m-%dT%H:%M:%S.%f'),
                 'process_id': process_id,
@@ -132,9 +132,9 @@ def run_ipc_benchmark(args):
 
     for run in range(args.runs):
 
-        latencies = multiprocessing.Manager().list()
-        mps = multiprocessing.Manager().list()
-        throughput = multiprocessing.Manager().list()
+        latencies = []
+        mps = []
+        throughput = []
         timestamps = multiprocessing.Manager().list()
         processes = []
         
@@ -142,7 +142,7 @@ def run_ipc_benchmark(args):
         
         #for each process start a ipc worker
         for i in range(num_processes):
-            process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, latencies, mps, throughput, timestamps))
+            process = multiprocessing.Process(target=ipc_worker, args=(shared_data, i, args.message_size, args.message_pattern, args, timestamps))
             processes.append(process)
             process.start()
 
@@ -174,18 +174,18 @@ def run_ipc_benchmark(args):
                 'throughput': throughput[i],
                 'options': options
             })
-            
+            #latencies
             log_message = f"{timestamp['capture_time']},{timestamp['process_id']},{latencies[i]:.6f},{mps[i]:.2f},{throughput[i]:.2f}"
             logging.info(log_message)
         
-        latencies = list(latencies)
+        #latencies = list(latencies)
         p50_latency = np.percentile(latencies, 50)
         p90_latency = np.percentile(latencies, 90)
         p99_latency = np.percentile(latencies, 99)
         average_latency = np.mean(latencies)
 
-        mps = list(mps)
-        throughput = list(throughput)
+        #mps = list(mps)
+        #throughput = list(throughput)
         avg_mps = sum(mps) / len(mps)
         avg_throughput = sum(throughput) / len(throughput)
         max_throughput = max(throughput)
