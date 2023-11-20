@@ -9,6 +9,7 @@ import time
 import yaml
 import json
 import sys
+import csv
 from datetime import datetime
 
 try:
@@ -17,33 +18,51 @@ except ImportError:
     posix_ipc = None
 
 def print_table(log_data):
-    process_ids = set(entry['process_id'] for entry in log_data)
-    process_ids = sorted(process_ids)
-
+    process_ids = sorted(set(entry['process_id'] for entry in log_data))
     header = ["Time"]
     for process_id in process_ids:
         header.extend([f"Process {process_id} Latency", f"Process {process_id} MPS", f"Process {process_id} Throughput"])
 
-    with open('ipc_benchmark_results.csv', 'w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(header)
+    # Print header
+    print(','.join(header))
 
-        current_second = None
-        for entry in log_data:
-            timestamp = entry['capture_time']
-            if current_second is None or current_second != int(timestamp):
-                current_second = int(timestamp)
-                row = [datetime.utcfromtimestamp(current_second).strftime('%Y-%m-%dT%H:%M:%S')]
-            else:
-                row = ['']
+    current_second = None
+    current_row = None
 
+    for entry in log_data:
+        timestamp = entry['capture_time']
+        dt_timestamp = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S')
+        current_entry_second = dt_timestamp.strftime('%Y-%m-%dT%H:%M:%S')
+
+        if current_second is None:
+            current_second = current_entry_second
+            current_row = [datetime.utcfromtimestamp(dt_timestamp.timestamp()).strftime('%Y-%m-%dT%H:%M:%S')]
+
+        if current_entry_second == current_second:
             process_id = entry['process_id']
             latency = entry['latency']
             mps_value = entry['mps']
             throughput_value = entry['throughput']
 
-            row.extend([f"{latency:.6f}", f"{mps_value:.2f}", f"{throughput_value:.2f}"])
-            csv_writer.writerow(row)
+            current_row.extend([f"{latency:.6f}", f"{mps_value:.2f}", f"{throughput_value:.2f}"])
+        else:
+            # Print the row for the completed second
+            print(','.join(map(str, current_row)))
+
+            # Start a new row for the next second
+            current_second = current_entry_second
+            current_row = [datetime.utcfromtimestamp(dt_timestamp.timestamp()).strftime('%Y-%m-%dT%H:%M:%S')]
+            
+            process_id = entry['process_id']
+            latency = entry['latency']
+            mps_value = entry['mps']
+            throughput_value = entry['throughput']
+
+            current_row.extend([f"{latency:.6f}", f"{mps_value:.2f}", f"{throughput_value:.2f}"])
+
+    # Print the last row
+    print(','.join(map(str, current_row)))
+
             
 def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps):
     #print("Creating ipc worker")
