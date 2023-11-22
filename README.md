@@ -17,7 +17,9 @@ This Python program is designed for benchmarking Inter-Process Communication (IP
 
 1. **Install Dependencies:**
    ```bash
-   pip install -r requirements.txt
+   dnf install numpy
+   dnf install pip
+   python3 -m pip install posix_ipc
 
 ## Run Benchmark 
 ### Command line
