@@ -70,7 +70,8 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
     num_messages = args.message_count
     messages_processed = 0
     duration = args.duration
-    
+    output = []
+
     if duration == 0 and num_messages == 0:
         raise ValueError("Both duration and num_messages cannot be 0. Specify a positive value for at least one of them.")
     Rstart_time = time.time()
@@ -87,7 +88,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
             response[:] = data[:message_size]
             end_time = time.perf_counter()
 
-            timestamps.append({
+            output.append({
                 'capture_time': datetime.utcfromtimestamp(end_time).strftime('%Y-%m-%dT%H:%M:%S.%f'),
                 'process_id': process_id,
                 'start_time': start_time,
@@ -111,7 +112,7 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
             data[:message_size] = message
             end_time = time.time()
             print("capture data")
-            timestamps.append({
+            output.append({
                 'capture_time': datetime.utcfromtimestamp(end_time).strftime('%Y-%m-%dT%H:%M:%S.%f'),
                 'process_id': process_id,
                 'start_time': start_time,
@@ -125,6 +126,8 @@ def ipc_worker(data, process_id, message_size, message_pattern, args, timestamps
             messages_processed += 1
             if num_messages and messages_processed >= num_messages:
                 break
+
+    timestamps.extend(output)
 
 def create_shared_memory(size, posix=False):
     print("creating shared memory")
